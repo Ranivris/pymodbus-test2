@@ -11,7 +11,7 @@ hvac_server.py: Very Simple Simulator + Modbus Slave(Server)
 
 hvac_client.py: Very Simple Weberver(Flask) + Modbus Master(Client)
 
-read_hvacs_erver.py: CLI + Modbus Master(Client) 
+read_hvac_server.py: CLI + Modbus Master(Client) 
 
 dashboard.html : HTML Structure. 
 
