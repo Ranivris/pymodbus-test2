@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+
+<style>
+/* ─── 전체 ─── */
+body{
+  font-family:'Segoe UI', 'Apple SD Gothic Neo', Roboto, sans-serif;
+  font-size:1.2rem;          /* 기본 폰트 20 % 확대 */
+  background:#f2f4f8;
+  margin:0; padding:24px;
+  color:#1f2937;
+}
+h2{margin:0 0 12px;}
+section{margin-bottom:40px}
+
+/* ─── 테이블 ─── */
+table{
+  width:100%; max-width:980px; margin:auto;
+  border-collapse:collapse; border-radius:12px; overflow:hidden;
+  box-shadow:0 6px 12px rgba(0,0,0,.06);
+}
+thead{
+  background:#B6C8F9;        /* 파스텔 퍼플‑블루 */
+  color:#ffffff; font-size:1.15em;
+}
+th,td{padding:14px 16px; text-align:center;}
+tbody tr:nth-child(even){background:#fdfaff;}  /* 연보라 */
+tbody tr:nth-child(odd) {background:#f6faff;}  /* 연하늘  */
+tbody tr:hover{background:#eaf4ff;}
+
+progress{
+  width:140px; height:16px; appearance:none;
+}
+progress::-webkit-progress-bar{background:#e5e7eb; border-radius:8px;}
+progress::-webkit-progress-value{background:#F6A5A5; border-radius:8px;} /* 연살구 */
+
+input{
+  padding:4px 6px; font-size:0.95rem; width:70px;
+  border:1px solid #cbd5e1; border-radius:6px;
+}
+button{
+  padding:6px 12px; margin-left:4px;
+  font-weight:600; border:none; border-radius:6px; cursor:pointer;
+  transition:.15s;
+}
+button:hover{transform:translateY(-1px);}
+.set-btn{background:#8BC3FF; color:#fff;}
+.set-btn:hover{background:#6FAEF8;}
+/* 상태 색상 */
+.on{color:#16a34a; font-weight:700;}
+.off{color:#dc2626; font-weight:700;}
+</style>
+
+<script>
+const ROOMS = {{ rooms|tojson }};
+async function load(){
+  const r = await fetch('/api/data'); const d = await r.json();
+  if(d.error){console.error(d.error);return;}
+  build('t1',1,d); build('t2',2,d);
+}
+function build(tid,u,d){
+  const t=d['t'+u],h=d['h'+u],l=d['l'+u],co=d['co'+u];
+  let html='';
+  for(let i=0;i<5;i++){
+    const idx=i+(u-1)*5, room=ROOMS[idx];
+    const T=(t[i]*0.1).toFixed(1), Hi=(h[i]*0.1).toFixed(1), Lo=(l[i]*0.1).toFixed(1);
+    html+=`<tr>
+      <td>${room}</td>
+      <td>
+        <progress max="40" value="${T}"></progress><br>${T}°C
+      </td>
+      <td class="${co[i]?'on':'off'}">${co[i]?'🟢 ON':'🔴 OFF'}</td>
+      <td>
+        H <input id="h${u}${i}" value=${Hi}>
+        L <input id="l${u}${i}" value=${Lo}>
+        <button class="set-btn" onclick="setSp(${u},${i})">Set</button>
+      </td></tr>`;
+  }
+  document.getElementById(tid).innerHTML=html;
+}
+async function setSp(u,i){
+  const hi=document.getElementById(`h${u}${i}`).value;
+  const lo=document.getElementById(`l${u}${i}`).value;
+  await fetch('/api/write_sp',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({unit:u,idx:i,high:hi,low:lo})});
+  setTimeout(load,300);
+}
+setInterval(load,2500); window.onload=load;
+</script>
+</head>
+
+<body>
+<h2>{{ message }}</h2>
+
+<section>
+  <h2>지역 1</h2>
+  <table>
+    <thead><tr><th>창고</th><th>온도</th><th>에어컨 동작</th><th>High / Low 설정</th></tr></thead>
+    <tbody id="t1"></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>지역 2</h2>
+  <table>
+    <thead><tr><th>창고</th><th>온도</th><th>에어컨 동작</th><th>High / Low 설정</th></tr></thead>
+    <tbody id="t2"></tbody>
+  </table>
+</section>
+</body>
+</html>
+
