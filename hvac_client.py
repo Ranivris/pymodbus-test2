@@ -1,5 +1,5 @@
 import logging # Added import
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, session, redirect
 from pymodbus.client import ModbusTcpClient
 
 MB_HOST, MB_PORT = "127.0.0.1", 5020
@@ -41,6 +41,9 @@ app.logger.setLevel(logging.INFO) # Set app.logger level to INFO
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.addFilter(APIDataFilter())
 werkzeug_logger.setLevel(logging.INFO) # Ensure INFO level is processed
+
+app.secret_key = 'your_secret_key'  # Added for session management
+
 
 # ---------- Modbus ----------
 def read_hr(client, unit):
@@ -106,11 +109,28 @@ def api_write_sp():
 # ---------- 뷰 ----------
 @app.route("/")
 def index():
+    if not session.get('logged_in'):
+        return redirect('/login')
     # title·message 문구도 지역/창고 콘셉트로 업데이트
     return render_template("dashboard.html",
                            rooms=ROOMS,
                            title="HVAC 모니터링",
                            message="지역 냉방 시스템 제어 대시보드")
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Basic authentication check
+        if username == 'admin' and password == 'admin':
+            session['logged_in'] = True
+            return redirect('/')
+        else:
+            error = '잘못된 사용자 이름 또는 비밀번호입니다.'
+    return render_template('login.html', error=error)
+
 
 if __name__=="__main__":
     app.run(host="0.0.0.0", port=8000, debug=False)
